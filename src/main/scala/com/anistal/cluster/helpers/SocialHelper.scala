@@ -1,8 +1,8 @@
 package com.anistal.cluster.helpers
 
-import com.anistal.cluster.models.{GithubModel, TwitterModel}
+import com.anistal.cluster.models.{GithubItem, GithubModel, TwitterModel}
 import com.typesafe.config.Config
-import org.json4s.native.Serialization.{read, write}
+import org.json4s.native.Serialization.read
 import org.json4s.{DefaultFormats, Formats}
 import twitter4j.conf.ConfigurationBuilder
 import twitter4j.{Query, Twitter, TwitterFactory}
@@ -31,11 +31,11 @@ case class SocialHelper(config: Config) {
 
   /**
    * Searches in Twitter for a keyword.
-   * @param keyword to search.
+   * @param items to search.
    * @return a list with the text of the tweets.
    */
-  def twitterQuery(keyword: String): Seq[TwitterModel] =
-    performTwitterQuery(keyword)
+  def twitterQuery(items: Seq[GithubItem]): Seq[TwitterModel] =
+    performTwitterQuery(items)
 
   /**
    * Queries to Github's API the top ten Github's projects with the passed keyword.
@@ -45,26 +45,29 @@ case class SocialHelper(config: Config) {
    * @return a JValue with the top ten Github's projects.
    */
   protected def performGithubQuery(endpoint: String,
-                                         params: Map[String, String],
+                                   params: Map[String, String],
                                          numberOfElements: Int): String =
     Http(endpoint).params(params).asString.body
 
+
   /**
    * Searches in Twitter for a keyword.
-   * @param keyword to search.
+   * @param items to search.
    * @return a list of Status tweets.
    */
-  protected def performTwitterQuery(keyword: String): Seq[TwitterModel] = {
+  protected def performTwitterQuery(items: Seq[GithubItem]): Seq[TwitterModel] = {
     import scala.collection.JavaConversions._
-    getTwitterInstance
-      .search(new Query(keyword))
+    val result = getTwitterInstance
+      .search(new Query(items.map(_.name).mkString(" OR ")))
       .getTweets
       .toList
-      .map(status => TwitterModel(
-        status.getId,
-        status.getText,
-        keyword
-      ))
+      .map(status => {
+        val filter = items.filter(item => status.getText.contains(item.name))
+        if(filter.nonEmpty)
+          TwitterModel(status.getId, status.getText, filter.head.name)
+        else TwitterModel(status.getId, status.getText, "none")
+      }).filter(twitterModel => twitterModel.keyword != "none")
+    result
   }
 
   /**

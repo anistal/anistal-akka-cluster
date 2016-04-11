@@ -1,7 +1,9 @@
 package com.anistal.cluster.constants
 
+/**
+ * Constants used in the application.
+ */
 object ClusterConstants {
-
 
   val GithubMaxNumberOfQueries = 1
   val GithubNumberOfElements = 100
@@ -11,4 +13,7 @@ object ClusterConstants {
     "sort" -> "stars",
     "order" -> "desc",
     "per_page" -> "100")
+
+  val AkkaBackendActorName = "backend"
+  val AkkaListenerActorName = "listener"
 }

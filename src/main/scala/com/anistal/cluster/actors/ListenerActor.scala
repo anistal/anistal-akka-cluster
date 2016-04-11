@@ -3,10 +3,18 @@ package com.anistal.cluster.actors
 import akka.actor._
 import akka.cluster.ClusterEvent._
 import akka.cluster._
+import com.anistal.cluster.constants.ClusterConstants
+import com.anistal.cluster.models.EventModelPublish
 
-class ListenerActor extends Actor with ActorLogging {
+/**
+ * ListenerActor is used for retrieve new changes from the cluster.
+ */
+class ListenerActor extends Actor
+  with ActorLogging
+  with EventModelPublish {
 
   val cluster = Cluster(context.system)
+  val actorId = ClusterConstants.AkkaBackendActorName
 
   override def preStart(): Unit =
     cluster.subscribe(
@@ -18,15 +26,14 @@ class ListenerActor extends Actor with ActorLogging {
 
   def receive = {
     case MemberUp(member) =>
-      log.info(s"Member is [Up]: ${member.address}")
+      publish(s"Member is [Up]: ${member.address}")
     case UnreachableMember(member) =>
-      log.info(s"Member is [Unreachable]: ${member.address}")
+      publish(s"Member is [Unreachable]: ${member.address}")
     case MemberRemoved(member, previousStatus) =>
-      log.info(s"Member is [Removed]: ${member.address}")
+      publish(s"Member is [Removed]: ${member.address}")
     case MemberExited(member) =>
-      log.info(s"Member is [Exited]: ${member.address}")
+      publish(s"Member is [Exited]: ${member.address}")
     case _: MemberEvent =>
       log.debug("Nothing to do")
   }
-
 }

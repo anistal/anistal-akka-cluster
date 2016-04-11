@@ -7,15 +7,20 @@ import com.typesafe.config.ConfigFactory._
 import com.typesafe.config._
 import scala.collection.JavaConversions._
 
-
+/**
+ * Used to parse all the configuration of the cluster
+ * @param isBackend if it is a backend node.
+ * @param isFrontend if it is a frontend node.
+ * @param configParams with all configuration parameters
+ */
 case class ConfigHelper(isBackend: Boolean = false,
                         isFrontend: Boolean = false,
                         configParams: Map[String, String] = Map.empty) {
 
-  lazy val config = asConfig
+  lazy val config = getTypesafeConfig
   lazy val clusterName = config.getString(ClusterNamePath)
 
-  private def asConfig(): Config = {
+  private def getTypesafeConfig(): Config = {
     val config = load(
       getClass.getClassLoader,
       ConfigResolveOptions.defaults.setAllowUnresolved(true))
@@ -29,14 +34,17 @@ case class ConfigHelper(isBackend: Boolean = false,
     val consumerSecret = configMap.get("cs")
     val accessToken = configMap.get("at")
     val accessSecret = configMap.get("ats")
-    val clusterSeedConfig =
+    val clusterSeedConfig = Option(configMap.get("seed")).map(seed => {
       s"""
          |akka {
          |  cluster {
-         |    seed-nodes = ["akka.tcp://$clusterName@172.17.0.2:2551"]
+         |    seed-nodes = ["akka.tcp://$clusterName@${seed.unwrapped().toString}"]
          |  }
          |}
       """.stripMargin
+    }).mkString("")
+    val redisHost = Option(configMap.get("rh")).getOrElse(ConfigValueFactory.fromAnyRef("127.0.0.1"))
+    val redisPort = Option(configMap.get("rp")).getOrElse(ConfigValueFactory.fromAnyRef(6379))
 
     (ConfigFactory.parseString(clusterSeedConfig))
       .withValue("clustering.ip", ipConfigValue)
@@ -44,11 +52,12 @@ case class ConfigHelper(isBackend: Boolean = false,
       .withValue("consumer.secret", consumerSecret)
       .withValue("access.token", accessToken)
       .withValue("access.secret", accessSecret)
+      .withValue("redis.host", redisHost)
+      .withValue("redis.port", redisPort)
       .withFallback(ConfigFactory.parseResources(configPath))
       .withFallback(config)
       .resolve
   }
-
 }
 
 object ConfigHelper {

@@ -12,6 +12,12 @@ import com.anistal.cluster.models.GithubItem
 import com.typesafe.config.Config
 import org.json4s.DefaultFormats
 
+/**
+ * FrontendActor is used for these purposes:
+ *   - When it is not processing any element send a message to the backend reporting that it is free.
+ *   - Crawling tweets from twitter and sending new tweets to the backend.
+ * @param config with the configuration.
+ */
 class FrontendActor(config: Config) extends Actor with ActorLogging {
 
   implicit val formats = DefaultFormats
@@ -20,7 +26,6 @@ class FrontendActor(config: Config) extends Actor with ActorLogging {
   val mediator = DistributedPubSub(context.system).mediator
 
   lazy val socialHelper = new SocialHelper(config)
-  var frontendCache = scala.collection.mutable.Map[Long, Long]()
 
   override def preStart(): Unit =
     cluster.subscribe(
@@ -38,12 +43,8 @@ class FrontendActor(config: Config) extends Actor with ActorLogging {
     case FrontendMessageQuery(items) =>
       log.info("Received FrontendMessageQuery")
 
-      val query = items.mkString(" OR ")
-      socialHelper.twitterQuery(query).foreach(tweet => {
-        if(frontendCache.contains(tweet.id) == false) {
-          mediator ! Send(path = "/user/backend", msg = BackendMessagePut(tweet), localAffinity = true)
-          frontendCache.put(tweet.id, tweet.id)
-        }
+      socialHelper.twitterQuery(items).foreach(tweet => {
+        mediator ! Send(path = "/user/backend", msg = BackendMessagePut(tweet), localAffinity = true)
       })
   }
 }
