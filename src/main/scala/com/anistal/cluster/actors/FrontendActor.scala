@@ -14,8 +14,8 @@ import org.json4s.DefaultFormats
 
 /**
  * FrontendActor is used for these purposes:
- *   - When it is not processing any element send a message to the backend reporting that it is free.
- *   - Crawling tweets from twitter and sending new tweets to the backend.
+ *  - When it is not processing any element send a message to the backend reporting that it is free.
+ *  - Crawling tweets from twitter and sending new tweets to the backend.
  * @param config with the configuration.
  */
 class FrontendActor(config: Config) extends Actor with ActorLogging {

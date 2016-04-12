@@ -13,7 +13,7 @@ import akka.util.Timeout
 import com.anistal.cluster.actors
 import com.anistal.cluster.actors.BackendMessages.{BackendMessageLast10, BackendMessageStart, BackendResponse}
 import com.anistal.cluster.actors.FrontendMessages.FrontendMessageStart
-import com.anistal.cluster.actors.{BackendActor, EventPublishActor, FrontendActor, ListenerActor}
+import com.anistal.cluster.actors.{BackendActor, EventPublishActor, FrontendActor, EventListenerActor}
 import com.anistal.cluster.models.EventModel
 import org.json4s.DefaultFormats
 import org.json4s.native.Serialization.write
@@ -42,8 +42,7 @@ object RunnerHelper {
 
       import system.dispatcher
 
-      system.scheduler.schedule(10 seconds, 1.2 hours) {
-      //system.scheduler.schedule(0 seconds, 5 seconds) {
+      system.scheduler.schedule(0 seconds, 5 seconds) {
         backend ! BackendMessageStart
       }
     }
@@ -132,6 +131,6 @@ object RunnerHelper {
    * @param system with the main actor system.
    */
   def initAkkaListener()(implicit config: ConfigHelper, system: ActorSystem): Unit = {
-    system.actorOf(Props[ListenerActor], "listener")
+    system.actorOf(Props[EventListenerActor], "listener")
   }
 }

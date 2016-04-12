@@ -2,6 +2,7 @@ package com.anistal.cluster.helpers
 
 import java.net.NetworkInterface
 
+import com.anistal.cluster.constants.ClusterConstants
 import com.anistal.cluster.helpers.ConfigHelper._
 import com.typesafe.config.ConfigFactory._
 import com.typesafe.config._
@@ -18,15 +19,14 @@ case class ConfigHelper(isBackend: Boolean = false,
                         configParams: Map[String, String] = Map.empty) {
 
   lazy val config = getTypesafeConfig
-  lazy val clusterName = config.getString(ClusterNamePath)
 
   private def getTypesafeConfig(): Config = {
     val config = load(
       getClass.getClassLoader,
       ConfigResolveOptions.defaults.setAllowUnresolved(true))
 
-    val clusterName = config.getString(ClusterNamePath)
-    val configPath = if(isBackend) BackendConf else FrontendConf
+    val clusterName = ClusterConstants.AkkaClusterName
+    val clusterPort = ClusterConstants.AkkaClusterPort
     val ip = getHostIP().getOrElse("127.0.0.1")
     val ipConfigValue = ConfigValueFactory.fromAnyRef(ip)
     val configMap = ConfigValueFactory.fromMap(configParams)
@@ -48,13 +48,13 @@ case class ConfigHelper(isBackend: Boolean = false,
 
     (ConfigFactory.parseString(clusterSeedConfig))
       .withValue("clustering.ip", ipConfigValue)
+      .withValue("clustering.port", ipConfigValue)
       .withValue("consumer.key", consumerKey)
       .withValue("consumer.secret", consumerSecret)
       .withValue("access.token", accessToken)
       .withValue("access.secret", accessSecret)
       .withValue("redis.host", redisHost)
       .withValue("redis.port", redisPort)
-      .withFallback(ConfigFactory.parseResources(configPath))
       .withFallback(config)
       .resolve
   }
@@ -62,13 +62,7 @@ case class ConfigHelper(isBackend: Boolean = false,
 
 object ConfigHelper {
 
-  val BackendConf = "node.seed.conf"
-  val FrontendConf = "node.cluster.conf"
-
-  private val ClusterNamePath = "clustering.cluster.name"
-
   def parse(args: Seq[String]): ConfigHelper = {
-
     val parser = new scopt.OptionParser[ConfigHelper]("akka-cluster") {
       head("akka-cluster", "1.0")
 

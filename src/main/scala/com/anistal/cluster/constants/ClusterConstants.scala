@@ -14,6 +14,8 @@ object ClusterConstants {
     "order" -> "desc",
     "per_page" -> "100")
 
+  val AkkaClusterName = "application"
+  val AkkaClusterPort = "2551"
   val AkkaBackendActorName = "backend"
   val AkkaListenerActorName = "listener"
 }
